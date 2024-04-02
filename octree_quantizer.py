@@ -2,13 +2,11 @@
 # Original octree implementation via https://github.com/delimitry/octree_color_quantizer/
 from invokeai.app.invocations.baseinvocation import (
     BaseInvocation,
-    InputField,
-    InvocationContext,
-    WithMetadata,
     invocation,
 )
-from invokeai.app.invocations.primitives import ImageField, ImageOutput
-from invokeai.app.services.image_records.image_records_common import ImageCategory, ResourceOrigin
+from invokeai.app.invocations.fields import ImageField, InputField, WithBoard, WithMetadata
+from invokeai.app.invocations.primitives import ImageOutput
+from invokeai.app.services.shared.invocation_context import InvocationContext
 
 
 class Color(object):
@@ -153,15 +151,15 @@ class OctreeQuantizer(object):
         return self.root.get_palette_index(color, 0)
 
 
-@invocation("octree_quantizer", title="Octree Quantizer", tags=["octree quantizer", "image"], version="1.0.0")
-class OctreeQuantizerInvocation(BaseInvocation, WithMetadata):
+@invocation("octree_quantizer", title="Octree Quantizer", tags=["octree quantizer", "image"], version="1.0.1")
+class OctreeQuantizerInvocation(BaseInvocation, WithBoard, WithMetadata):
     """Quantizes an image to the desired number of colors"""
 
     image: ImageField = InputField(description="The image to quantize")
     final_colors: int = InputField(gt=0, description="The final number of colors in the palette", default=16)
 
     def invoke(self, context: InvocationContext) -> ImageOutput:
-        image = context.services.images.get_pil_image(self.image.image_name)
+        image = context.images.get_pil(self.image.image_name)
         width, height = image.size
         mode = image.mode
 
@@ -191,19 +189,6 @@ class OctreeQuantizerInvocation(BaseInvocation, WithMetadata):
         if alpha_channel is not None:
             image.putalpha(alpha_channel)
 
-        image_dto = context.services.images.create(
-            image=image,
-            image_origin=ResourceOrigin.INTERNAL,
-            image_category=ImageCategory.GENERAL,
-            node_id=self.id,
-            session_id=context.graph_execution_state_id,
-            is_intermediate=self.is_intermediate,
-            metadata=self.metadata,
-            workflow=context.workflow,
-        )
+        image_dto = context.images.save(image=image)
 
-        return ImageOutput(
-            image=ImageField(image_name=image_dto.image_name),
-            width=image.width,
-            height=image.height,
-        )
+        return ImageOutput.build(image_dto)
