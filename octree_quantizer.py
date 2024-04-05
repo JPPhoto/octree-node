@@ -1,12 +1,15 @@
 # Copyright (c) 2024 Jonathan S. Pollack (https://github.com/JPPhoto)
 # Original octree implementation via https://github.com/delimitry/octree_color_quantizer/
-from invokeai.app.invocations.baseinvocation import (
+from invokeai.app.invocations.fields import WithBoard
+from invokeai.invocation_api import (
     BaseInvocation,
+    ImageField,
+    ImageOutput,
+    InputField,
+    InvocationContext,
+    WithMetadata,
     invocation,
 )
-from invokeai.app.invocations.fields import ImageField, InputField, WithBoard, WithMetadata
-from invokeai.app.invocations.primitives import ImageOutput
-from invokeai.app.services.shared.invocation_context import InvocationContext
 
 
 class Color(object):
@@ -151,7 +154,7 @@ class OctreeQuantizer(object):
         return self.root.get_palette_index(color, 0)
 
 
-@invocation("octree_quantizer", title="Octree Quantizer", tags=["octree quantizer", "image"], version="1.0.1")
+@invocation("octree_quantizer", title="Octree Quantizer", tags=["octree quantizer", "image"], version="1.0.2")
 class OctreeQuantizerInvocation(BaseInvocation, WithBoard, WithMetadata):
     """Quantizes an image to the desired number of colors"""
 
